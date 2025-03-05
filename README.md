@@ -1,4 +1,4 @@
 # set up DB
 
-run ```bash docker_cmd.sh```
+run ```docker_cmd.sh```
 
