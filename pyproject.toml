@@ -1,0 +1,25 @@
+[tool.poetry]
+name = "ca-finder"
+version = "0.1.0"
+description = ""
+authors = ["oren <oren@gmai.com>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.9"
+pandas = "^2.2.3"
+requests = "^2.32.3"
+pyarrow = "^19.0.1"
+tqdm = "^4.67.1"
+polars = "^1.24.0"
+psycopg2-binary = "^2.9.10"
+openai = "^1.65.3"
+sqlalchemy = "^2.0.38"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.poetry.scripts]
+ca-finder = "ca_finder.ca_finder:main"
