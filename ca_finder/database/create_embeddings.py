@@ -15,27 +15,38 @@ engine = create_engine("postgresql://postgres:password@localhost:3000/shilldb")
 # Fetch tweets that need embeddings
 df = pd.read_sql("SELECT tweetid, content FROM tweets WHERE content_embedding IS NULL", engine)
 
+# Batch size
+BATCH_SIZE = 50
 
-def get_embedding(text):
+
+def get_embeddings(batch_texts):
+    """Generate embeddings for a batch of texts."""
     response = openai.embeddings.create(
-        input=text,
+        input=batch_texts,  # Send the entire batch in one API call
         model="text-embedding-ada-002"
     )
-    return response.data[0].embedding  # Correct way to access the embedding
+    return [item.embedding for item in response.data]  # Return list of embeddings
 
 
-df["embedding"] = df["content"][:1000].progress_apply(get_embedding)
+# Process the DataFrame in batches
+for i in tqdm(range(0, len(df), BATCH_SIZE)):
+    batch = df.iloc[i:i + BATCH_SIZE]
 
-# Insert embeddings into PostgreSQL
-conn = engine.raw_connection()
-cursor = conn.cursor()
-for index, row in list(df.iterrows())[:1000]:
-    cursor.execute(
-        "UPDATE tweets SET content_embedding = %s WHERE tweetid = %s",
-        (row["embedding"], row["tweetid"])
-    )
-conn.commit()
-cursor.close()
-conn.close()
+    # Generate embeddings in bulk
+    batch_embeddings = get_embeddings(batch["content"].tolist())
+
+    # Insert embeddings into PostgreSQL
+    conn = engine.raw_connection()
+    cursor = conn.cursor()
+    
+    for tweetid, embedding in zip(batch["tweetid"], batch_embeddings):
+        cursor.execute(
+            "UPDATE tweets SET content_embedding = %s WHERE tweetid = %s",
+            (embedding, tweetid)
+        )
+
+    conn.commit()
+    cursor.close()
+    conn.close()
 
 print("Embeddings stored successfully!")
